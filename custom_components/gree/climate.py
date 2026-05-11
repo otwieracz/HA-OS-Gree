@@ -6,13 +6,10 @@ from typing import Any
 
 from greeclimate.device import (
     TEMP_MAX,
-    TEMP_MAX_F,
     TEMP_MIN,
-    TEMP_MIN_F,
     FanSpeed,
     HorizontalSwing,
     Mode,
-    TemperatureUnits,
     VerticalSwing,
 )
 
@@ -122,21 +119,15 @@ class GreeClimateEntity(GreeEntity, ClimateEntity):
     _attr_fan_modes = [*FAN_MODES_REVERSE]
     _attr_swing_modes = SWING_MODES
     _attr_name = None
+    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_min_temp = TEMP_MIN
+    _attr_max_temp = TEMP_MAX
     _enable_turn_on_off_backwards_compatibility = False
 
     def __init__(self, coordinator: DeviceDataUpdateCoordinator) -> None:
         """Initialize the Gree device."""
         super().__init__(coordinator)
         self._attr_unique_id = coordinator.device.device_info.mac
-        units = self.coordinator.device.temperature_units
-        if units == TemperatureUnits.C:
-            self._attr_temperature_unit = UnitOfTemperature.CELSIUS
-            self._attr_min_temp = TEMP_MIN
-            self._attr_max_temp = TEMP_MAX
-        else:
-            self._attr_temperature_unit = UnitOfTemperature.FAHRENHEIT
-            self._attr_min_temp = TEMP_MIN_F
-            self._attr_max_temp = TEMP_MAX_F
 
     @property
     def current_temperature(self) -> float:
