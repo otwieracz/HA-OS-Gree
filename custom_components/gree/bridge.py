@@ -7,6 +7,7 @@ import logging
 from greeclimate.device import Device, DeviceInfo
 from greeclimate.discovery import Discovery, Listener
 from greeclimate.exceptions import DeviceNotBoundError, DeviceTimeoutError
+from greeclimate.network import Response
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -34,9 +35,16 @@ class DeviceDataUpdateCoordinator(DataUpdateCoordinator):  # pylint: disable=has
             _LOGGER,
             name=f"{DOMAIN}-{device.device_info.name}",
             update_interval=timedelta(seconds=60),
+            always_update=False,
         )
         self.device = device
+        self.device.add_handler(Response.RESULT, self._device_state_updated)
         self._error_count = 0
+
+    def _device_state_updated(self, *_args) -> None:
+        """Refresh entities when the device acks a command (v2 callback)."""
+        self._error_count = 0
+        self.async_set_updated_data(self.device.raw_properties)
 
     async def _async_update_data(self):
         """Update the state of the device."""
@@ -55,6 +63,8 @@ class DeviceDataUpdateCoordinator(DataUpdateCoordinator):  # pylint: disable=has
                     self.device.device_info,
                 )
                 raise UpdateFailed(f"Device {self.name} is unavailable") from error
+
+        return self.device.raw_properties
 
     async def push_state_update(self):
         """Send state updates to the physical device."""
